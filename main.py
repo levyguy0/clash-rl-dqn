@@ -2,6 +2,8 @@ import cv2
 import numpy as np
 import pyautogui
 from inference_sdk import InferenceHTTPClient
+from agent import ClashAgent
+import torch
 
 GAME_REGION = (1175, 150, 500, 700)
 
@@ -18,7 +20,28 @@ class ClashEnv:
             api_key="jTWYejAGVnMTbcU62TBp"
         )
 
-    
+        self.playable_width = 500
+        self.playable_height = 400
+        self.num_cards = 4
+        self.current_cards = []
+
+        self.max_allies, self.max_enemies = 10, 10
+
+        self.available_actions = self.get_available_actions()
+
+        self.idx_to_pos = {
+            0: (1300, 720),
+            1: (1350, 720),
+            2: (1400, 720),
+            3: (1450, 720)
+        }
+
+        self.agent = ClashAgent(
+            in_features=(1 + 2*10 + 2*10),
+            out_features=len(self.available_actions)
+        )
+
+
     def capture_game_region(self):
         screenshot = pyautogui.screenshot(region=self.game_region)
         frame = np.array(screenshot)
@@ -80,8 +103,12 @@ class ClashEnv:
             and p["class"].startswith("enemy")
         ]
 
-        allies_flat = [coord for pos in allies for coord in pos]
-        enemies_flat = [coord for pos in enemies for coord in pos]
+        padded_allies = allies[:self.max_allies] + [(0, 0)] * (self.max_allies - len(allies))
+        padded_enemies = enemies[:self.max_enemies] + [(0, 0)] * (self.max_enemies - len(enemies))
+
+        norm = lambda x, y: (x / self.playable_width, y / self.playable_height)
+        allies_flat = [coord for x, y in padded_allies for coord in norm(x, y)]
+        enemies_flat = [coord for x, y in padded_enemies for coord in norm(x, y)]
 
         return allies_flat, enemies_flat
     
@@ -96,10 +123,63 @@ class ClashEnv:
         return state
     
 
-    def get_available_cards(self):
-        pass
+    def capture_cards_in_hand(self, frame):
+        height, width = frame.shape[:2]
+
+        top = int(0.80 * height)
+        bottom = int(0.88 * height)
+        left = int(0.28 * width)
+        right = int(0.92 * width)
+
+        card_bar = frame[top:bottom, left:right]
+        
+        card_width = (right - left) // 4
+        cards = []
+
+        for i in range(4):
+            card_left = i * card_width
+            card_right = (i + 1) * card_width
+            card_img = card_bar[:, card_left:card_right]
+            cv2.imshow(f"card_{i}", card_img)
+            cards.append(card_img)
+            
+
+        return cards
     
+    
+    def get_cards_in_hand(self):
+        frame = self.capture_game_region()
+        cards = self.capture_cards_in_hand(frame)
+    
+        current_cards = []
+        for card in cards:
+            prediction = self.client.infer(card, model_id="cards-clash-royale-i62d3/1")
+            current_cards.append(prediction["predictions"][0]["class"])
+
+        self.current_cards = current_cards
+        self.num_cards = len(current_cards)
+    
+
+    def get_available_actions(self):
+        actions = [
+            [card, x / (self.playable_width - 1), y / (self.playable_height - 1)]
+            for card in range(self.num_cards)
+            for x in range(self.playable_width)
+            for y in range(self.playable_height)
+        ]
+
+        return actions
+    
+
+    def play_card(self, card_idx, x_norm, y_norm):
+        card_pos = self.idx_to_pos[card_idx]
+        pyautogui.moveTo(card_pos)
+        pyautogui.leftClick()
+
+        x_abs = int(self.game_region[0] + x_norm * self.playable_width)
+        y_abs = int(self.game_region[1] + (1 - y_norm) * self.playable_height)
+
+        pyautogui.dragTo(x_abs, y_abs, duration=0.2, button="left")
 
 
 env = ClashEnv()
-env.get_state()
