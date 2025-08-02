@@ -4,6 +4,7 @@ import pyautogui
 from inference_sdk import InferenceHTTPClient
 from agent import ClashAgent
 import torch
+import time
 
 GAME_REGION = (1175, 150, 500, 700)
 
@@ -19,6 +20,11 @@ class ClashEnv:
             api_url="https://serverless.roboflow.com",
             api_key="jTWYejAGVnMTbcU62TBp"
         )
+
+        self.enemy_princess_towers = 2
+        self.ally_princess_towers = 2
+        self.enemy_king_tower = 1
+        self.ally_king_tower = 1
 
         self.playable_width = 500
         self.playable_height = 400
@@ -90,6 +96,13 @@ class ClashEnv:
             "enemy king tower",
             "enemy princess tower"
         ]
+
+        ally_king_tower = len([p for p in predictions if p["class"] == "ally king tower"])
+        enemy_king_tower = len([p for p in predictions if p["class"] == "enemy king tower"])
+        ally_princess_towers = len([p for p in predictions if p["class"] == "ally princess tower"])
+        enemy_princess_towers = len([p for p in predictions if p["class"] == "enemy princess tower"])
+        
+        self.ally_king_tower, self.enemy_king_tower, self.ally_princess_towers, self.enemy_princess_towers = ally_king_tower, enemy_king_tower, ally_princess_towers, enemy_princess_towers
 
         allies = [
             (p["x"], p["y"]) for p in predictions
@@ -181,5 +194,24 @@ class ClashEnv:
 
         pyautogui.dragTo(x_abs, y_abs, duration=0.2, button="left")
 
+    
+    def is_game_over(self):
+        return self.enemy_king_tower == 0 or self.ally_king_tower == 0
+
 
 env = ClashEnv()
+
+while True:
+    state = env.get_state()
+
+    if env.is_game_over():
+        break
+
+    state_tensor = torch.tensor(state)
+    action_idx = env.agent.act(state_tensor)
+    action = env.available_actions[action_idx]
+
+    card_idx, x, y = action
+    env.play_card(card_idx, x, y)
+
+    time.sleep(1)
