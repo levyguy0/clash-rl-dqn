@@ -3,8 +3,7 @@ import numpy as np
 import pyautogui
 from inference_sdk import InferenceHTTPClient
 from agent import ClashAgent
-import torch
-import time
+from elixirs import card_to_elixir
 
 GAME_REGION = (1175, 150, 500, 700)
 
@@ -130,6 +129,8 @@ class ClashEnv:
         frame = self.capture_game_region()
         elixir_count = self.get_elixir_count(frame)
         allies, enemies = self.get_field_info(frame)
+        
+        self.get_cards_in_hand()
 
         state = np.array([elixir_count / 10] + allies + enemies, dtype=np.float32)
 
@@ -166,8 +167,10 @@ class ClashEnv:
     
         current_cards = []
         for card in cards:
-            prediction = self.client.infer(card, model_id="cards-clash-royale-i62d3/1")
-            current_cards.append(prediction["predictions"][0]["class"])
+            result = self.client.infer(card, model_id="cards-clash-royale-i62d3/1")
+            predictions = result.get("predictions", [])
+            card_name = "unknown" if predictions == [] else predictions[0]["class"]
+            current_cards.append(card_name)
 
         self.current_cards = current_cards
         self.num_cards = len(current_cards)
@@ -185,12 +188,15 @@ class ClashEnv:
     
 
     def play_card(self, card_idx, x_norm, y_norm):
+        card_name = self.current_cards[card_idx]
         card_pos = self.idx_to_pos[card_idx]
         pyautogui.moveTo(card_pos)
         pyautogui.leftClick()
 
         x_abs = int(self.game_region[0] + x_norm * self.playable_width)
         y_abs = int(self.game_region[1] + (1 - y_norm) * self.playable_height)
+
+        print(f"Playing: {card_name} for {card_to_elixir[card_name]} elixir at {x_abs, y_abs}")
 
         pyautogui.dragTo(x_abs, y_abs, duration=0.2, button="left")
 
@@ -199,19 +205,19 @@ class ClashEnv:
         return self.enemy_king_tower == 0 or self.ally_king_tower == 0
 
 
-env = ClashEnv()
+# env = ClashEnv()
 
-while True:
-    state = env.get_state()
+# while True:
+#     state = env.get_state()
 
-    if env.is_game_over():
-        break
+#     if env.is_game_over():
+#         break
 
-    state_tensor = torch.tensor(state)
-    action_idx = env.agent.act(state_tensor)
-    action = env.available_actions[action_idx]
+#     state_tensor = torch.tensor(state)
+#     action_idx = env.agent.act(state_tensor)
+#     action = env.available_actions[action_idx]
 
-    card_idx, x, y = action
-    env.play_card(card_idx, x, y)
+#     card_idx, x, y = action
+#     env.play_card(card_idx, x, y)
 
-    time.sleep(1)
+#     time.sleep(1)
