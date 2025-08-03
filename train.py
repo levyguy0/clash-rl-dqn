@@ -34,6 +34,9 @@ for episode in range(NUM_GAMES):
         target[action_idx] = reward + env.agent.gamma * torch.max(next_q_values).item()
 
         loss = env.agent.loss_fn(q_values, target)
+
+        print(loss)
+
         env.agent.optimizer.zero_grad()
         loss.backward()
         env.agent.optimizer.step()
