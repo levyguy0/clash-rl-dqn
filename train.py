@@ -9,9 +9,12 @@ NUM_GAMES = 1
 env = ClashEnv()
 
 for episode in range(NUM_GAMES):
-    while not env.is_game_over():
+    while True:
         state = env.get_state()
         state_tensor = torch.tensor(state)
+
+        if env.is_game_over():
+            break
 
         q_values = env.agent.act(state_tensor, env.current_cards, env.available_actions)
         

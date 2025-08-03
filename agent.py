@@ -111,7 +111,7 @@ class ClashAgent:
             pass  # Ignore special keys
 
     
-    def save_to_csv(state, action, reward):
+    def save_to_csv(self, state, action, reward):
         with open("reward_data.csv", mode='a', newline='') as file:
             writer = csv.writer(file)
             writer.writerow([
