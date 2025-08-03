@@ -154,7 +154,6 @@ class ClashEnv:
             card_left = i * card_width
             card_right = (i + 1) * card_width
             card_img = card_bar[:, card_left:card_right]
-            cv2.imshow(f"card_{i}", card_img)
             cards.append(card_img)
             
 

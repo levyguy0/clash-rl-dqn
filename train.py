@@ -1,4 +1,4 @@
-from main import ClashEnv
+from env import ClashEnv
 import torch
 import random
 import time
