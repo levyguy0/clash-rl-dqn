@@ -1,14 +1,20 @@
 from env import ClashEnv
-from agent import ClashAgent
 import random
 import torch
-import time
 import csv
-import cv2
 from pynput import keyboard
+from reward import RewardModel
+import numpy as np
 
 env = ClashEnv()
 reward = None
+
+reward_model = RewardModel(
+    in_features=44,
+    hidden_units=32,
+    out_features=10
+)
+reward_model.load_state_dict(torch.load("reward_models/model-1754182515.604433"))
 
 csv_path = "reward_data.csv"
 
@@ -39,6 +45,15 @@ while not env.is_game_over():
     card_idx, x, y = action
     env.play_card(card_idx, x, y)
 
+    move = np.array(state.tolist() + action)
+    move_tensor = torch.tensor(move, dtype=torch.float32)
+
+    predicted_reward_logits = reward_model(move_tensor.unsqueeze(0))
+    predicted_reward_probs = torch.softmax(predicted_reward_logits, dim=1)
+    predicted_reward_class = torch.argmax(predicted_reward_probs, dim=1)
+
+    print(f"Predicted reward: {predicted_reward_class + 1}")
+
     print("Review action.")
 
     with keyboard.Listener(on_press=on_press) as listener:
@@ -52,4 +67,3 @@ while not env.is_game_over():
             str(action),
             reward
         ])
-    # i can press keys 1-0 to represent a reward of 1-10. store state, action, reward in a csv
