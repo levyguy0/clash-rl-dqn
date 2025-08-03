@@ -41,7 +41,5 @@ for episode in range(NUM_GAMES):
         loss.backward()
         env.agent.optimizer.step()
 
-        time.sleep(1)
-
     torch.save(env.agent.model.state_dict(), f"models/model-{datetime.now().timestamp()}.pt")
 
