@@ -86,4 +86,4 @@ if __name__ == "__main__":
         if (epoch + 1) % 1000 == 0:
             print(f"Epoch: {epoch + 1} | Loss: {loss:.5f} | Acc: {acc:.3f}") 
 
-    torch.save(model.state_dict(), f"reward_models/model-{datetime.now().timestamp()}")
+    torch.save(model.state_dict(), f"reward_models/model-{datetime.now().timestamp()}.pt")

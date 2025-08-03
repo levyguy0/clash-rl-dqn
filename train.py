@@ -23,7 +23,6 @@ for episode in range(NUM_GAMES):
         action = env.available_actions[action_idx]
         card_idx, x, y = action
         env.play_card(card_idx, x, y)
-        time.sleep(1)
 
         next_state_tensor, reward = env.agent.step(state_tensor, action, env.current_cards)
         next_q_values = env.agent.act(next_state_tensor)
@@ -36,6 +35,7 @@ for episode in range(NUM_GAMES):
         loss.backward()
         env.agent.optimizer.step()
 
-    if (episode + 1) % 10 == 0:
-        torch.save(env.agent.model.state_dict(), f"models/model-{datetime.now().timestamp()}.pt")
+        time.sleep(1)
+
+    torch.save(env.agent.model.state_dict(), f"models/model-{datetime.now().timestamp()}.pt")
 

@@ -60,7 +60,9 @@ while not env.is_game_over():
         listener.join()
 
     # Save to CSV
-    with open(csv_path, mode='a', newline='') as file:
+
+def save_to_csv(state, action, reward):
+    with open("reward_data.csv", mode='a', newline='') as file:
         writer = csv.writer(file)
         writer.writerow([
             str(state.tolist()),

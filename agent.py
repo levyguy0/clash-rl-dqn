@@ -1,6 +1,34 @@
 import torch
 from torch import nn
 from elixirs import card_to_elixir
+from pynput import keyboard
+from gather_reward_data import save_to_csv
+from reward import RewardModel
+import numpy as np
+from model_version import get_recent_model
+
+reward = None
+
+reward_model = RewardModel(
+    in_features=44,
+    hidden_units=32,
+    out_features=10
+)
+reward_model.load_state_dict(torch.load(get_recent_model("reward_models")))
+
+
+def on_press(key):
+    global reward
+    try:
+        if key.char in '123456789':
+            reward = int(key.char)
+            return False  # Stop listener
+        elif key.char == '0':
+            reward = 10
+            return False
+    except AttributeError:
+        pass  # Ignore special keys
+
 
 class ClashModel(nn.Module):
     def __init__(self, in_features, hidden_units, out_features):
@@ -83,4 +111,26 @@ class ClashAgent:
     
 
     def compute_reward(self, state, action):
-        return 0
+        # manual reward training
+
+        print("Review action.")
+        with keyboard.Listener(on_press=on_press) as listener:
+            listener.join()
+        
+        save_to_csv(state, action, reward)
+
+        print(f"Given reward: {reward}")
+
+        # reward model predicted reward
+
+        move = np.array(state.tolist() + action)
+        move_tensor = torch.tensor(move, dtype=torch.float32)
+        predicted_reward_logits = reward_model(move_tensor.unsqueeze(0))
+        predicted_reward_probs = torch.softmax(predicted_reward_logits, dim=1)
+        predicted_reward_class = torch.argmax(predicted_reward_probs, dim=1)
+
+        print(f"Predicted reward: {predicted_reward_class.item() + 1}")
+
+        return reward
+        
+

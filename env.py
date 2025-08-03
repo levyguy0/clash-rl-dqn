@@ -4,6 +4,8 @@ import pyautogui
 from inference_sdk import InferenceHTTPClient
 from agent import ClashAgent
 from elixirs import card_to_elixir
+import torch
+from model_version import get_recent_model
 
 GAME_REGION = (1175, 150, 500, 700)
 
@@ -45,6 +47,8 @@ class ClashEnv:
             in_features=(1 + 2*10 + 2*10),
             out_features=len(self.available_actions)
         )
+
+        self.agent.load_state_dict(torch.load(get_recent_model("models")))
 
 
     def capture_game_region(self):
