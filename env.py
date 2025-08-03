@@ -9,11 +9,6 @@ from model_version import get_recent_model
 
 GAME_REGION = (1175, 150, 500, 700)
 
-class Actions:
-    def __init__(self):
-        pass
-    
-
 class ClashEnv:
     def __init__(self):
         self.game_region = GAME_REGION
@@ -48,7 +43,9 @@ class ClashEnv:
             out_features=len(self.available_actions)
         )
 
-        self.agent.load_state_dict(torch.load(get_recent_model("models")))
+        model_path = get_recent_model("models")
+        if model_path != "None":
+            self.agent.model.load_state_dict(torch.load(model_path))
 
 
     def capture_game_region(self):
@@ -206,21 +203,3 @@ class ClashEnv:
     
     def is_game_over(self):
         return self.enemy_king_tower == 0 or self.ally_king_tower == 0
-
-
-# env = ClashEnv()
-
-# while True:
-#     state = env.get_state()
-
-#     if env.is_game_over():
-#         break
-
-#     state_tensor = torch.tensor(state)
-#     action_idx = env.agent.act(state_tensor)
-#     action = env.available_actions[action_idx]
-
-#     card_idx, x, y = action
-#     env.play_card(card_idx, x, y)
-
-#     time.sleep(1)

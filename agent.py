@@ -2,32 +2,10 @@ import torch
 from torch import nn
 from elixirs import card_to_elixir
 from pynput import keyboard
-from gather_reward_data import save_to_csv
 from reward import RewardModel
 import numpy as np
 from model_version import get_recent_model
-
-reward = None
-
-reward_model = RewardModel(
-    in_features=44,
-    hidden_units=32,
-    out_features=10
-)
-reward_model.load_state_dict(torch.load(get_recent_model("reward_models")))
-
-
-def on_press(key):
-    global reward
-    try:
-        if key.char in '123456789':
-            reward = int(key.char)
-            return False  # Stop listener
-        elif key.char == '0':
-            reward = 10
-            return False
-    except AttributeError:
-        pass  # Ignore special keys
+import csv
 
 
 class ClashModel(nn.Module):
@@ -59,6 +37,17 @@ class ClashAgent:
         self.gamma = 0.95
         self.loss_fn = nn.MSELoss()
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=0.01)
+
+        self.reward = None
+        self.reward_model = RewardModel(
+            in_features=44,
+            hidden_units=32,
+            out_features=10
+        )
+
+        reward_model_path = get_recent_model("reward_models")
+        if reward_model_path != "None":
+            self.reward_model.load_state_dict(torch.load(reward_model_path))
 
 
     def act(self, state, current_cards=None, available_actions=None):
@@ -110,27 +99,49 @@ class ClashAgent:
         return next_state, reward
     
 
+    def await_manual_reward(self, key):
+        try:
+            if key.char in '123456789':
+                self.reward = int(key.char)
+                return False  # Stop listener
+            elif key.char == '0':
+                self.reward = 10
+                return False
+        except AttributeError:
+            pass  # Ignore special keys
+
+    
+    def save_to_csv(state, action, reward):
+        with open("reward_data.csv", mode='a', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow([
+                str(state.tolist()),
+                str(action),
+                reward
+            ])
+    
+
     def compute_reward(self, state, action):
         # manual reward training
 
         print("Review action.")
-        with keyboard.Listener(on_press=on_press) as listener:
+        with keyboard.Listener(on_press=self.await_manual_reward) as listener:
             listener.join()
         
-        save_to_csv(state, action, reward)
+        self.save_to_csv(state, action, self.reward)
 
-        print(f"Given reward: {reward}")
+        print(f"Given reward: {self.reward}")
 
         # reward model predicted reward
 
         move = np.array(state.tolist() + action)
         move_tensor = torch.tensor(move, dtype=torch.float32)
-        predicted_reward_logits = reward_model(move_tensor.unsqueeze(0))
+        predicted_reward_logits = self.reward_model(move_tensor.unsqueeze(0))
         predicted_reward_probs = torch.softmax(predicted_reward_logits, dim=1)
         predicted_reward_class = torch.argmax(predicted_reward_probs, dim=1)
 
         print(f"Predicted reward: {predicted_reward_class.item() + 1}")
 
-        return reward
+        return self.reward
         
 
