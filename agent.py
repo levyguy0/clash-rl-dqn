@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-from elixirs import card_to_elixir
+from card_data import card_to_elixir
 from pynput import keyboard
 from reward import RewardModel
 import numpy as np

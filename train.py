@@ -1,3 +1,5 @@
+# to do - add to the action a card id so it learns what cards its playin.
+
 from env import ClashEnv
 import torch
 import random
@@ -24,8 +26,12 @@ for episode in range(NUM_GAMES):
             action_idx = torch.argmax(q_values).item()
         
         action = env.available_actions[action_idx]
-        card_idx, x, y = action
+        card_id, x, y = action
+        card_idx = env.get_hand_idx_from_card_id(card_id)
         env.play_card(card_idx, x, y)
+
+        # wait a second, get the state again with env.get_state() then get reward with a manual reward function env.agent.compute_reward(state, next_state)
+        # action is array of (card_id, x, y) state is [elixir, ally_x1, ally_y1, ..., enemy_x1, enemy_y1, ..., card_id1, card_id2, card_id3, card_id4, ally_king_towers, ally_princess_towers, enemy_king_towers, enemy_princess_towers]
 
         next_state_tensor, reward = env.agent.step(state_tensor, action, env.current_cards)
         next_q_values = env.agent.act(next_state_tensor)

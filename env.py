@@ -3,7 +3,7 @@ import numpy as np
 import pyautogui
 from inference_sdk import InferenceHTTPClient
 from agent import ClashAgent
-from elixirs import card_to_elixir
+from card_data import card_to_elixir, card_to_id, card_from_id
 import torch
 from model_version import get_recent_model
 
@@ -174,12 +174,20 @@ class ClashEnv:
 
         self.current_cards = current_cards
         self.num_cards = len(current_cards)
+
+
+    def get_hand_idx_from_card_id(self, id):
+        card = card_from_id[id]
+
+        for i, c in enumerate(self.current_cards):
+            if c == card:
+                return i
     
 
     def get_available_actions(self):
         actions = [
-            [card, x / (self.playable_width - 1), y / (self.playable_height - 1)]
-            for card in range(self.num_cards)
+            [card_to_id[card], x / (self.playable_width - 1), y / (self.playable_height - 1)]
+            for card in self.current_cards
             for x in range(self.playable_width)
             for y in range(self.playable_height)
         ]
