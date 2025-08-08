@@ -20,8 +20,8 @@ cards = response.json()["items"]
 card_to_elixir = {item["name"].strip().lower().replace(".", "").replace("royal", "royale"): item.get("elixirCost", 0) for item in cards}
 card_to_elixir["unknown"] = 0
 
-card_to_id = {item["name"].strip().lower().replace(".", "").replace("royal", "royale"): str(item["id"]) for item in cards}
+card_to_id = {item["name"].strip().lower().replace(".", "").replace("royal", "royale"): str(item["id"] / 100000000) for item in cards}
 card_to_id["unknown"] = "0"
 
-card_from_id = {str(item["id"]): item["name"].strip().lower().replace(".", "").replace("royal", "royale") for item in cards}
+card_from_id = {str(item["id"] / 100000000): item["name"].strip().lower().replace(".", "").replace("royal", "royale") for item in cards}
 card_from_id["0"] = "unknown"

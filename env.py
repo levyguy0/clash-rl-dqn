@@ -6,15 +6,19 @@ from agent import ClashAgent
 from card_data import card_to_elixir, card_to_id, card_from_id
 import torch
 from model_version import get_recent_model
+import time
+import os
+from dotenv import load_dotenv
 
 GAME_REGION = (1175, 150, 500, 700)
+load_dotenv()
 
 class ClashEnv:
     def __init__(self):
         self.game_region = GAME_REGION
         self.client = InferenceHTTPClient(
             api_url="https://serverless.roboflow.com",
-            api_key="jTWYejAGVnMTbcU62TBp"
+            api_key=os.getenv("ROBOFLOW_API_KEY")
         )
 
         self.enemy_princess_towers = 2
@@ -29,7 +33,7 @@ class ClashEnv:
 
         self.max_allies, self.max_enemies = 10, 10
 
-        self.available_actions = self.get_available_actions()
+        self.available_actions = []
 
         self.idx_to_pos = {
             0: (1300, 720),
@@ -39,8 +43,8 @@ class ClashEnv:
         }
 
         self.agent = ClashAgent(
-            in_features=(1 + 2*10 + 2*10),
-            out_features=len(self.available_actions)
+            in_features=(1 + 2*10 + 2*10 + 4 + 2 + 2),
+            out_features=800_000
         )
 
         model_path = get_recent_model("models")
@@ -123,17 +127,22 @@ class ClashEnv:
         allies_flat = [coord for x, y in padded_allies for coord in norm(x, y)]
         enemies_flat = [coord for x, y in padded_enemies for coord in norm(x, y)]
 
-        return allies_flat, enemies_flat
+        towers_flat = [ally_king_tower, enemy_king_tower, ally_princess_towers, enemy_princess_towers]
+
+        return allies_flat, enemies_flat, towers_flat
     
 
     def get_state(self):
         frame = self.capture_game_region()
         elixir_count = self.get_elixir_count(frame)
-        allies, enemies = self.get_field_info(frame)
+        allies, enemies, towers = self.get_field_info(frame)
         
         self.get_cards_in_hand()
+        self.get_available_actions()
 
-        state = np.array([elixir_count / 10] + allies + enemies, dtype=np.float32)
+        card_ids_in_hand = [card_to_id[card] for card in self.current_cards]
+
+        state = np.array([elixir_count / 10] + allies + enemies + towers + card_ids_in_hand, dtype=np.float32)
 
         return state
     
@@ -192,7 +201,7 @@ class ClashEnv:
             for y in range(self.playable_height)
         ]
 
-        return actions
+        self.available_actions = actions
     
 
     def play_card(self, card_idx, x_norm, y_norm):
@@ -211,3 +220,9 @@ class ClashEnv:
     
     def is_game_over(self):
         return self.enemy_king_tower == 0 or self.ally_king_tower == 0
+    
+    def start_new_game(self):
+        pyautogui.moveTo(self.game_region[0] + 130, self.game_region[1] + 560)
+        pyautogui.click()
+
+        time.sleep(10)
