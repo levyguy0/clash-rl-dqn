@@ -3,10 +3,13 @@ import torch
 import random
 import time
 from datetime import datetime
+from utils import wait_for_key
 
 NUM_GAMES = 3
 
 env = ClashEnv()
+
+gamemode = input("Gamemode: ")
 
 for episode in range(NUM_GAMES):
     while True:
@@ -52,5 +55,15 @@ for episode in range(NUM_GAMES):
     if (episode + 1) % 3 == 0:
         torch.save(env.agent.model.state_dict(), f"models/model-{datetime.now().timestamp()}.pt")
 
-    env.start_new_game()
+    # prepare for another game if there is one requested
+
+    print(f"Complete game {episode + 1} of {NUM_GAMES}")
+
+    if (episode + 1) != NUM_GAMES:
+        if gamemode == "friendly":
+            wait_for_key("0")
+        else:
+            env.start_new_game()
+    else:
+        print("Games finished!")
     

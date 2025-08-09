@@ -17,7 +17,7 @@ class ClashEnv:
     def __init__(self):
         self.game_region = GAME_REGION
         self.client = InferenceHTTPClient(
-            api_url="https://serverless.roboflow.com",
+            api_url="http://localhost:9001",
             api_key=os.getenv("ROBOFLOW_API_KEY")
         )
 
@@ -50,6 +50,7 @@ class ClashEnv:
         model_path = get_recent_model("models")
         if model_path != "None":
             self.agent.model.load_state_dict(torch.load(model_path))
+            print(f"Using model {model_path}")
 
 
     def capture_game_region(self):
