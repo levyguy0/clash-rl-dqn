@@ -4,7 +4,7 @@ import random
 import time
 from datetime import datetime
 
-NUM_GAMES = 10
+NUM_GAMES = 3
 
 env = ClashEnv()
 
@@ -49,7 +49,7 @@ for episode in range(NUM_GAMES):
         loss.backward()
         env.agent.optimizer.step()
 
-    if (episode + 1) % 10 == 0:
+    if (episode + 1) % 3 == 0:
         torch.save(env.agent.model.state_dict(), f"models/model-{datetime.now().timestamp()}.pt")
 
     env.start_new_game()
