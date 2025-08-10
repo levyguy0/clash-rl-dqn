@@ -21,7 +21,8 @@ for episode in range(NUM_GAMES):
 
         q_values = env.agent.act(state_tensor, env.current_cards, env.available_actions)
 
-        if random.random() < env.agent.epsilon:
+        if random.random() < env.agent.get_epsilon(episode):
+            print("Playing random move")
             action_idx = random.randint(0, len(env.available_actions))
         else:
             action_idx = torch.argmax(q_values).item()

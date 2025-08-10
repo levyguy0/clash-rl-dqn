@@ -34,7 +34,9 @@ class ClashAgent:
         self.model = ClashModel(in_features=in_features,
                    hidden_units=10,
                    out_features=out_features)
-        self.epsilon = 0.1
+        self.epsilon_start = 0.6
+        self.epsilon_min = 0.01
+        self.decay_rate = 0.001
         self.gamma = 0.95
         self.loss_fn = nn.MSELoss()
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=0.01)
@@ -49,6 +51,10 @@ class ClashAgent:
         reward_model_path = get_recent_model("reward_models")
         if reward_model_path != "None":
             self.reward_model.load_state_dict(torch.load(reward_model_path))
+
+    
+    def get_epsilon(self, episode):
+        return self.epsilon_min + (self.epsilon_start - self.epsilon_min) * math.exp(-self.decay_rate * episode)
 
 
     def act(self, state, current_cards=None, available_actions=None):
