@@ -90,7 +90,7 @@ class ClashEnv:
         estimated_elixir = int(round(fill_ratio * 10))
 
         return min(estimated_elixir, 10)
-
+    
     
     def get_field_info(self, frame):
         predictions = self.client.infer(frame, model_id="clash-royale-xy2jw/2")["predictions"]

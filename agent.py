@@ -212,28 +212,31 @@ class ClashAgent:
 
         enemy_reward = 0
         ally_reward = 0
+        elixir_reward = 0
         enemy_princess_reward = 0
         ally_princess_reward = 0
         ally_king_reward = 0 
         enemy_king_reward = 0
-
+        
         if new_data["enemy_count"] < prev_data["enemy_count"]:
-            diff = abs(new_data["enemy_count"] - prev_data["enemy_count"])
-
+            diff = prev_data["enemy_count"] - new_data["enemy_count"]
             enemy_reward += diff * 5
 
+            elixir_spent = prev_data["elixir"] - new_data["elixir"]
+            if elixir_spent > 0:
+                elixir_reward += (diff - elixir_spent)
+
         if new_data["ally_count"] < prev_data["ally_count"]:
-            diff = abs(new_data["ally_count"] - prev_data["ally_count"])
+            diff = prev_data["ally_count"] - new_data["ally_count"]
 
             ally_reward -= diff * 3
 
         if new_data["enemy_princess_towers"] < prev_data["enemy_princess_towers"]:
-            diff = abs(new_data["enemy_princess_towers"] - prev_data["enemy_princess_towers"])
-
+            diff = prev_data["enemy_princess_towers"] - new_data["enemy_princess_towers"]
             enemy_princess_reward += diff * 20
 
         if new_data["ally_princess_towers"] < prev_data["ally_princess_towers"]:
-            diff = abs(new_data["ally_princess_towers"] - prev_data["ally_princess_towers"])
+            diff = prev_data["ally_princess_towers"] - new_data["ally_princess_towers"]
 
             ally_princess_reward -= diff * 20
 
@@ -245,7 +248,7 @@ class ClashAgent:
 
             enemy_king_reward += 50
 
-        reward = enemy_reward + ally_reward + enemy_princess_reward + ally_princess_reward + enemy_king_reward + ally_king_reward
+        reward = enemy_reward + ally_reward + elixir_reward + enemy_princess_reward + ally_princess_reward + enemy_king_reward + ally_king_reward
 
         print(f"Enemy reward: {enemy_reward}\nAlly reward: {ally_reward}\nEnemy princess reward: {enemy_princess_reward}\nAlly princess reward: {ally_princess_reward}\nEnemy king reward: {enemy_king_reward}\nAlly king reward: {ally_king_reward}\nTotal reward: {reward}")
         
