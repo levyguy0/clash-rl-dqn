@@ -5,7 +5,7 @@ import time
 from datetime import datetime
 from utils import wait_for_key
 
-NUM_GAMES = 3
+NUM_GAMES = 50
 
 env = ClashEnv()
 
@@ -53,7 +53,7 @@ for episode in range(NUM_GAMES):
         loss.backward()
         env.agent.optimizer.step()
 
-    if (episode + 1) % 3 == 0:
+    if (episode + 1) % 5 == 0:
         torch.save(env.agent.model.state_dict(), f"models/model-{datetime.now().timestamp()}.pt")
 
     # prepare for another game if there is one requested

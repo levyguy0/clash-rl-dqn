@@ -250,7 +250,7 @@ class ClashAgent:
 
         reward = enemy_reward + ally_reward + elixir_reward + enemy_princess_reward + ally_princess_reward + enemy_king_reward + ally_king_reward
 
-        print(f"Enemy reward: {enemy_reward}\nAlly reward: {ally_reward}\nEnemy princess reward: {enemy_princess_reward}\nAlly princess reward: {ally_princess_reward}\nEnemy king reward: {enemy_king_reward}\nAlly king reward: {ally_king_reward}\nTotal reward: {reward}")
+        print(f"Enemy reward: {enemy_reward}\nAlly reward: {ally_reward}\nEnemy princess reward: {enemy_princess_reward}\nAlly princess reward: {ally_princess_reward}\nEnemy king reward: {enemy_king_reward}\nAlly king reward: {ally_king_reward}\nElixir reward: {elixir_reward}\nTotal reward: {reward}")
         
         return reward
 
