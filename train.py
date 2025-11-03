@@ -5,7 +5,7 @@ import time
 from datetime import datetime
 from utils import wait_for_key
 
-NUM_GAMES = 100
+NUM_GAMES = 10
 
 env = ClashEnv()
 
@@ -64,6 +64,7 @@ for episode in range(NUM_GAMES):
         if gamemode == "friendly":
             wait_for_key("0")
         else:
+            time.sleep(5)
             env.start_new_game()
     else:
         print("Games finished!")
