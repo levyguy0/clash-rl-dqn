@@ -7,6 +7,7 @@ import numpy as np
 from model_version import get_recent_model
 import csv
 import math
+from card_data import card_from_id
 
 
 class ClashModel(nn.Module):
@@ -57,23 +58,37 @@ class ClashAgent:
         return self.epsilon_min + (self.epsilon_start - self.epsilon_min) * math.exp(-self.decay_rate * episode)
 
 
-    def act(self, state, current_cards=None, available_actions=None):
+    def act(self, state, available_actions):
         q_values = self.model(state)
 
-        # if current_cards is not None and available_actions is not None:
-        #     # set any where the corresponding action is a card for too much elixir or placed in invalid position to -inf
-        #     mask = torch.ones(len(available_actions), dtype=torch.bool)
+        # set any where the corresponding action is a card for too much elixir or placed in invalid position to -inf
+        mask = torch.ones(len(available_actions), dtype=torch.bool)
 
-        #     for i, (card_idx, x, y) in enumerate(available_actions):
-        #         card_name = current_cards[card_idx]
-        #         elixir_cost = card_to_elixir[card_name]
+        for i, (card_id, _, _) in enumerate(available_actions):
+            if card_id == -1:
+                continue
 
-        #         elixir_available = state[0].item() * 10
+            card_name = card_from_id[card_id]
+            elixir_cost = card_to_elixir[card_name]
 
-        #         if elixir_cost > elixir_available:
-        #             mask[i] = False
+            elixir_available = state[0].item() * 10
 
-        #     q_values[~mask] = float('-inf')
+            if elixir_cost > elixir_available:
+                mask[i] = False
+
+        q_values[~mask] = -1e20
+
+        # check enemy princess tower count from state
+        enemy_princess_towers = state[-5].item()
+        if int(enemy_princess_towers) == 2:
+            # every q value corresponding to an action that would place a card in the enemy half is set to -inf
+            mask = torch.ones(len(available_actions), dtype=torch.bool)
+
+            for i, (_, _, y) in enumerate(available_actions):
+                if y > 0.9:
+                    mask[i] = False
+
+            q_values[~mask] = -1e20
 
         return q_values
     

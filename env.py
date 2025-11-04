@@ -9,13 +9,16 @@ from model_version import get_recent_model
 import time
 import os
 from dotenv import load_dotenv
+import math
 
-GAME_REGION = (1175, 150, 500, 700)
+GAME_REGION = (1175, 150, 500, 650)
 load_dotenv()
 
 class ClashEnv:
     def __init__(self):
         self.game_region = GAME_REGION
+        self.playable_region = (self.game_region[0], math.ceil(self.game_region[1] * (8/3)), self.game_region[2], math.ceil(self.game_region[3] * (5/13)))
+
         self.client = InferenceHTTPClient(
             api_url="http://localhost:9001",
             api_key=os.getenv("ROBOFLOW_API_KEY")
@@ -26,8 +29,6 @@ class ClashEnv:
         self.enemy_king_tower = 1
         self.ally_king_tower = 1
 
-        self.playable_width = 500
-        self.playable_height = 400
         self.num_cards = 4
         self.current_cards = []
 
@@ -44,7 +45,7 @@ class ClashEnv:
 
         self.agent = ClashAgent(
             in_features=(1 + 2*10 + 2*10 + 4 + 2 + 2),
-            out_features=800_000
+            out_features=(self.playable_region[2] * self.playable_region[3] * 4) + 1
         )
 
         model_path = get_recent_model("models")
@@ -64,8 +65,8 @@ class ClashEnv:
     def get_elixir_count(self, frame):
         height, width = frame.shape[:2]
 
-        top = int(0.90 * height)
-        bottom = int(0.91 * height)
+        top = int(0.97 * height)
+        bottom = int(0.975 * height)
         left = int(0.28 * width)
         right = int(0.94 * width)
 
@@ -124,7 +125,7 @@ class ClashEnv:
         padded_allies = allies[:self.max_allies] + [(0, 0)] * (self.max_allies - len(allies))
         padded_enemies = enemies[:self.max_enemies] + [(0, 0)] * (self.max_enemies - len(enemies))
 
-        norm = lambda x, y: (x / self.playable_width, y / self.playable_height)
+        norm = lambda x, y: (x / self.playable_region[2], y / self.playable_region[3])
         allies_flat = [coord for x, y in padded_allies for coord in norm(x, y)]
         enemies_flat = [coord for x, y in padded_enemies for coord in norm(x, y)]
 
@@ -151,13 +152,12 @@ class ClashEnv:
     def capture_cards_in_hand(self, frame):
         height, width = frame.shape[:2]
 
-        top = int(0.80 * height)
-        bottom = int(0.88 * height)
+        top = int(0.85 * height)
+        bottom = int(0.95 * height)
         left = int(0.28 * width)
         right = int(0.92 * width)
 
         card_bar = frame[top:bottom, left:right]
-        
         card_width = (right - left) // 4
         cards = []
 
@@ -196,11 +196,13 @@ class ClashEnv:
 
     def get_available_actions(self):
         actions = [
-            [card_to_id[card], x / (self.playable_width - 1), y / (self.playable_height - 1)]
+            [card_to_id[card], x / (self.playable_region[2] - 1), y / (self.playable_region[3] - 1)]
             for card in self.current_cards
-            for x in range(self.playable_width)
-            for y in range(self.playable_height)
+            for x in range(self.playable_region[2])
+            for y in range(self.playable_region[3])
         ]
+
+        actions.append([-1, -1, -1])
 
         self.available_actions = actions
     
@@ -211,8 +213,8 @@ class ClashEnv:
         pyautogui.moveTo(card_pos)
         pyautogui.leftClick()
 
-        x_abs = int(self.game_region[0] + x_norm * self.playable_width)
-        y_abs = int(self.game_region[1] + (1 - y_norm) * self.playable_height)
+        x_abs = int(self.playable_region[0] + x_norm * self.playable_region[2])
+        y_abs = int(self.playable_region[1] + (1 - y_norm) * self.playable_region[3])
 
         print(f"Playing: {card_name} for {card_to_elixir[card_name]} elixir at {x_abs, y_abs}")
 
@@ -221,6 +223,7 @@ class ClashEnv:
     
     def is_game_over(self):
         return self.enemy_king_tower == 0 or self.ally_king_tower == 0
+    
     
     def start_new_game(self):
         pyautogui.moveTo(self.game_region[0] + 130, self.game_region[1] + 560)
