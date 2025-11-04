@@ -5,7 +5,7 @@ import time
 from datetime import datetime
 from utils import wait_for_key
 
-NUM_GAMES = 10
+NUM_GAMES = 1
 
 env = ClashEnv()
 
@@ -19,17 +19,20 @@ for episode in range(NUM_GAMES):
         if env.is_game_over():
             break
 
-        q_values = env.agent.act(state_tensor, env.current_cards, env.available_actions)
+        q_values = env.agent.act(state_tensor, env.available_actions)
 
         action_idx = torch.argmax(q_values).item()
         
         action = env.available_actions[action_idx]
         card_id, x, y = action
-        card_idx = env.get_hand_idx_from_card_id(card_id)
 
-        env.play_card(card_idx, x, y)
+        if card_id == -1:
+            print("Doing nothing")
+        else:
+            card_idx = env.get_hand_idx_from_card_id(card_id)
+            env.play_card(card_idx, x, y)
 
-        time.sleep(3)
+        time.sleep(2)
         
     # prepare for another game if there is one requested
 
