@@ -1,217 +1,67 @@
-# Clash Bot 🤖
+# Clash Royale RL Agent
 
-An AI-powered reinforcement learning bot that automatically plays Clash Royale using computer vision and deep learning. The bot uses Deep Q-Networks (DQN) to learn optimal card placement strategies by observing game states through screenshots and object detection.
+An autonomous reinforcement learning agent that plays Clash Royale using deep Q-learning and computer vision.
 
-## 🎮 Features
+## Overview
 
-- **Computer Vision Integration**: Captures game state in real-time using screenshots and object detection via Roboflow
-- **Deep Q-Learning**: Uses a neural network-based agent to learn optimal gameplay strategies
-- **Reward Model**: Implements a reward prediction model trained on game state transitions
-- **Automatic Card Playing**: Interacts with the game using automated mouse controls
-- **State Representation**: Captures elixir count, card positions, tower health, and unit positions
-- **Flexible Training**: Supports both friendly battles and ladder matches
+The Clash Royale RL Agent is a deep reinforcement learning project that learns to play Clash Royale by observing the game screen and making strategic card placement decisions. The agent uses a combination of computer vision for state perception, deep neural networks for decision-making, and reward shaping to learn optimal gameplay strategies.
 
-## 🏗️ Architecture
+## Features
+
+- **Computer Vision Integration**: Uses Roboflow API for real-time object detection of cards, units, and towers on the battlefield
+- **Deep Q-Learning**: Implements DQN (Deep Q-Network) with epsilon-greedy exploration for learning optimal card placement strategies
+- **State Representation**: Captures comprehensive game state including:
+  - Current elixir count
+  - Positions of ally and enemy units
+  - Tower health status (king and princess towers)
+  - Cards currently in hand
+- **Action Masking**: Prevents invalid actions such as playing cards that cost more elixir than available or placing cards in invalid positions
+- **Reward Engineering**: Computes rewards based on:
+  - Enemy unit eliminations
+  - Tower damage dealt and received
+  - Elixir efficiency
+  - Game outcome (victory/defeat)
+- **Model Persistence**: Automatically saves and loads trained models for continuous learning across training sessions
+- **Human-in-the-Loop Training**: Optional reward model training using human-labeled data for more accurate reward prediction
+
+## Architecture
 
 The project consists of several key components:
 
-- **Environment (`env.py`)**: `ClashEnv` class that handles game interaction, state capture via screenshots, and object detection using Roboflow inference
-- **Agent (`agent.py`)**: `ClashAgent` with a neural network model that learns Q-values for action selection
-- **Reward System (`reward.py`)**: Reward model that can predict rewards for state-action pairs
-- **Training Loop (`train.py`)**: Main script that runs episodes and trains the agent using Q-learning
-- **Card Data (`card_data.py`)**: Fetches and manages card information from the Clash Royale API
+- **`ClashEnv`**: Game environment that interfaces with the Clash Royale game window, captures screenshots, extracts game state, and executes actions
+- **`ClashAgent`**: Reinforcement learning agent implementing DQN with action masking and reward computation
+- **`RewardModel`**: Optional neural network model for predicting rewards based on state-action pairs (trainable from human feedback)
+- **Training Pipeline**: Q-learning implementation with experience replay and model checkpointing
 
-## 📋 Prerequisites
+## Technologies
 
-- Python 3.13+
-- Clash Royale running on your computer (emulator or desktop client)
-- Roboflow account and API key
-- Clash Royale API key (optional, for card data)
+- **PyTorch**: Deep learning framework for neural network implementation
+- **OpenCV**: Computer vision for image processing and elixir detection
+- **PyAutoGUI**: Screen capture and mouse automation for interacting with the game
+- **Roboflow**: Object detection API for identifying game elements
+- **Clash Royale API**: Fetching card metadata and elixir costs
 
-## 🔧 Installation
-
-1. Clone the repository:
-
-```bash
-git clone <repository-url>
-cd clash-bot
-```
-
-2. Create a virtual environment:
-
-```bash
-python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-```
-
-3. Install dependencies:
-
-```bash
-pip install torch torchvision torchaudio
-pip install opencv-python
-pip install pyautogui
-pip install inference-sdk
-pip install numpy
-pip install pandas
-pip install python-dotenv
-pip install pynput
-pip install requests
-pip install torchmetrics
-pip install tqdm
-```
-
-4. Set up environment variables:
-   Create a `.env` file in the root directory:
-
-```env
-ROBOFLOW_API_KEY=your_roboflow_api_key_here
-CLASH_API_KEY=your_clash_royale_api_key_here
-```
-
-5. Run `card_data.py` to fetch and cache card data:
-
-```bash
-python card_data.py
-```
-
-## 🚀 Usage
-
-### Training the Bot
-
-1. **Configure game region**: Update `GAME_REGION` in `env.py` to match your Clash Royale window position:
-
-   ```python
-   GAME_REGION = (x, y, width, height)  # Adjust to your screen
-   ```
-
-2. **Start training**:
-
-```bash
-python train.py
-```
-
-3. When prompted, enter the gamemode:
-   - `friendly`: For friendly battles (waits for manual game start)
-   - Any other value: For ladder/other modes (auto-starts games)
-
-The bot will:
-
-- Capture game state through screenshots
-- Detect cards, units, and towers using object detection
-- Select actions using the neural network
-- Learn from rewards computed based on game state changes
-- Save model checkpoints every 5 episodes
-
-### Collecting Reward Data
-
-To collect labeled reward data for training the reward model:
-
-```bash
-python gather_reward_data.py
-```
-
-This script will prompt you to rate actions (1-9 or 0 for 10) and save them to `reward_data.csv`.
-
-### Training the Reward Model
-
-```bash
-python reward.py
-```
-
-This trains a reward prediction model on the collected data in `reward_data.csv`.
-
-## 📁 Project Structure
+## Project Structure
 
 ```
 clash-bot/
-├── agent.py              # ClashAgent class with neural network and Q-learning logic
-├── env.py                # ClashEnv class for game interaction and state capture
-├── train.py              # Main training loop
-├── reward.py             # Reward model training script
-├── gather_reward_data.py # Script for collecting labeled reward data
-├── card_data.py          # Fetches and caches card data from Clash Royale API
+├── agent.py              # DQN agent implementation
+├── env.py                # Game environment and state extraction
+├── train.py              # Training script
+├── test.py               # Testing script (greedy policy)
+├── reward.py             # Reward model training
+├── gather_reward_data.py  # Human reward labeling tool
+├── card_data.py          # Card metadata fetching and caching
+├── model_version.py      # Model checkpoint management
 ├── utils.py              # Utility functions
-├── model_version.py      # Helper to find most recent model checkpoint
-├── test.py               # Simple test script for screenshots
-├── models/               # Saved model checkpoints
-├── reward_models/        # Saved reward model checkpoints
-├── reward_data.csv       # Collected reward training data
-├── card_to_elixir.json   # Card name to elixir cost mapping
-├── card_to_id.json       # Card name to ID mapping
-├── card_from_id.json     # Card ID to name mapping
-├── pyproject.toml        # Project metadata
-└── README.md             # This file
+└── models/               # Saved model checkpoints
 ```
 
-## 🧠 How It Works
+## Research Applications
 
-### State Representation
+This project demonstrates practical applications of:
 
-The bot's state vector includes:
-
-- Elixir count (normalized 0-1)
-- Ally unit positions (normalized coordinates, max 10 units)
-- Enemy unit positions (normalized coordinates, max 10 units)
-- Tower counts (ally/enemy king/princess towers)
-- Current hand cards (encoded as IDs)
-
-Total state size: `1 + 2*10 + 2*10 + 4 + 2 + 2 = 45 features`
-
-### Action Space
-
-The action space consists of all possible card placements:
-
-- 4 cards in hand
-- 500 × 400 possible positions on the field
-- Total: ~800,000 possible actions per state
-
-### Reward Function
-
-The reward is computed based on:
-
-- Enemy units eliminated: +5 per unit
-- Ally units lost: -3 per unit
-- Enemy princess towers destroyed: +20 per tower
-- Ally princess towers lost: -20 per tower
-- Enemy king tower destroyed: +50
-- Ally king tower destroyed: -50
-- Elixir efficiency: bonus for efficient trades
-
-### Training Process
-
-1. Agent observes current game state
-2. Selects action using ε-greedy policy (exploration vs exploitation)
-3. Executes action (plays card at position)
-4. Observes new state and computes reward
-5. Updates Q-network using Q-learning loss
-6. Repeats until game ends
-
-## ⚙️ Configuration
-
-Key hyperparameters in `agent.py`:
-
-- `epsilon_start`: 0.6 (initial exploration rate)
-- `epsilon_min`: 0.01 (minimum exploration rate)
-- `decay_rate`: 0.001 (epsilon decay)
-- `gamma`: 0.95 (discount factor)
-- Learning rate: 0.01
-- Hidden units: 10 (for main model), 32 (for reward model)
-
-## 🐛 Known Limitations
-
-- Game region coordinates are hardcoded and need manual adjustment
-- Action space is very large (800k actions), making training challenging
-- No action masking for invalid moves (see `todo.md` for planned improvements)
-- Requires manual game setup and window positioning
-
-## 📝 TODO
-
-See `todo.md` for planned improvements:
-
-- Field restriction based on princess towers
-- Elixir-based action restriction
-- "Do Nothing" action option
-
-## ⚠️ Disclaimer
-
-This project is for educational and research purposes only. Using automated bots to play Clash Royale may violate the game's terms of service. Use at your own risk.
+- Reinforcement learning in real-time strategy games
+- Computer vision for game state perception
+- Reward shaping and action masking in constrained action spaces
+- Human-in-the-loop machine learning for reward function design
