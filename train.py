@@ -5,7 +5,7 @@ import time
 from datetime import datetime
 from utils import wait_for_key
 
-NUM_GAMES = 3
+NUM_GAMES = 20
 
 env = ClashEnv()
 
